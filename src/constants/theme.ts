@@ -14,6 +14,10 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    primary: '#1D4ED8',
+    onPrimary: '#ffffff',
+    border: '#8B8D98',
+    error: '#B42318',
   },
   dark: {
     text: '#ffffff',
@@ -21,9 +25,13 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+    primary: '#93C5FD',
+    onPrimary: '#000000',
+    border: '#7C7F86',
+    error: '#FDA29B',
   },
 } as const;
-
+export const MinTouchTarget = 44;
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
