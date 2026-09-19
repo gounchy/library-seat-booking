@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { MinTouchTarget, Spacing } from '@/constants/theme';
@@ -41,7 +41,11 @@ type ZoneFilterProps = {
 
 export function ZoneFilter({ zones, selected, onSelect }: ZoneFilterProps) {
   return (
-    <View style={styles.row}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
+      contentContainerStyle={styles.row}>
       <Chip label="All zones" selected={selected === null} onPress={() => onSelect(null)} />
       {zones.map((zone) => (
         <Chip
@@ -51,16 +55,11 @@ export function ZoneFilter({ zones, selected, onSelect }: ZoneFilterProps) {
           onPress={() => onSelect(zone)}
         />
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
   chip: {
     minHeight: MinTouchTarget,
     minWidth: MinTouchTarget,
@@ -69,5 +68,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scroll: {
+    flexGrow: 0,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: Spacing.two,
   },
 });

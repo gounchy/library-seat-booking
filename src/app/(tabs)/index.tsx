@@ -4,7 +4,7 @@ import { DevPanel } from '@/components/dev-panel';
 import { QueryState } from '@/components/query-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { SeatList } from '@/features/seats/seat-list';
 import { useSeats } from '@/features/seats/use-seats';
 import { useRouter } from 'expo-router';
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
+    paddingBottom: Spacing.three,
     gap: Spacing.two,
   },
   header: {
