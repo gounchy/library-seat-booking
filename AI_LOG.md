@@ -420,3 +420,201 @@ timeSlot	{ start: "HH:mm"; end: "HH:mm" }	Khớp ví dụ 14:00-16:00 và 15:00-
 User	{ studentName: string }	Đề không có kiểu này, nhưng cần cho sign-in và cho studentName của booking
 
 Seat.id sinh ra thế nào (người dùng nhập hay mock server tự sinh) tôi sẽ chốt ở bước 3.3 khi viết createSeat.
+Bước 3.3: Mock API
+
+Mục tiêu: một "máy chủ giả" trong bộ nhớ, hành xử giống server thật ở bốn điểm: có độ trễ, có thể lỗi mạng, tự kiểm tra dữ liệu, và trả về bản sao chứ không đưa thẳng dữ liệu nội bộ. Bước này làm phần seats. Auth và bookings làm sau.
+
+Quy ước tên file: template dùng kebab-case (themed-text.tsx), nên từ giờ ta cũng dùng mock-db.ts, seats-api.ts, auth-store.ts... thay cho tên camelCase trong kiến trúc ở Bước C.
+
+Các quyết định thiết kế
+Vấn đề	Quyết định	Lý do
+Seat.id do ai tạo?	Người dùng nhập (ví dụ "A07"), server kiểm tra trùng	Số ghế là nhãn dán thật trên bàn. Ngoài ra khi tạo ghế lúc offline, client đã biết sẵn id nên không phải thay id tạm ở Phase 12
+Lỗi có phân loại	ApiError có code	Khi replay outbox, lỗi NETWORK thì thử lại, còn CONFLICT thì báo người dùng. Không phân loại được thì không xử lý khác nhau được
+Khi nào chạy logic server?	Sau khi hết độ trễ	Thay đổi dữ liệu xảy ra lúc "yêu cầu tới server", giống thật
+Trả bản sao	{ ...seat }	Nếu trả chính object trong db, UI có thể sửa nhầm "database" mà không qua API
+
+Giải thích:
+
+ApiError extends Error thêm trường code. Ở UI ta sẽ viết error instanceof ApiError && error.code === 'CONFLICT'. Trong test ở dưới sẽ có một dòng in ra instanceof để xác nhận nó hoạt động trên môi trường của bạn.
+simulateRequest nhận một hàm handler, chờ latencyMs, rồi chạy nó. Vì async, throw bên trong tự thành Promise bị reject, và TanStack Query bắt được điều đó (isError).
+failNext dùng để bạn ép một request lỗi, bấm retry là request sau thành công. Đây chính là cách kiểm tra nút Retry ở "4 trạng thái" của đề.
+Ta bọc trạng thái mô phỏng sau hàm setSimulation thay vì để UI sửa trực tiếp object, để code ngoài có một điểm vào rõ ràng.
+Thông báo lỗi tạm viết tiếng Anh. Ngôn ngữ giao diện đề chưa quy định, ta sẽ chốt ở Phase 4 khi làm màn hình lỗi.
+
+File 2: src/api/mock-db.ts
+typescript
+import { toDateString } from '@/lib/time';
+import type { Booking, Seat } from '@/types';
+
+const ZONES = ['A', 'B', 'C'] as const;
+const SEATS_PER_ZONE = 6;
+
+type Database = {
+  seats: Seat[];
+  bookings: Booking[];
+  nextBookingNumber: number;
+};
+
+function createSeedSeats(): Seat[] {
+  return ZONES.flatMap((zone) =>
+    Array.from({ length: SEATS_PER_ZONE }, (_, index) => ({
+      id: `${zone}${String(index + 1).padStart(2, '0')}`,
+      zone,
+      hasOutlet: index % 2 === 0,
+    })),
+  );
+}
+
+function createSeedBookings(): Booking[] {
+  const today = toDateString(new Date());
+  return [
+    { id: 'b1', seatId: 'A01', date: today, timeSlot: { start: '08:00', end: '12:00' }, studentName: 'Tran Van B' },
+    { id: 'b2', seatId: 'A02', date: today, timeSlot: { start: '13:00', end: '17:00' }, studentName: 'Le Thi C' },
+    { id: 'b3', seatId: 'B01', date: today, timeSlot: { start: '09:00', end: '18:00' }, studentName: 'Pham Van D' },
+    { id: 'b4', seatId: 'B02', date: today, timeSlot: { start: '14:00', end: '16:00' }, studentName: 'Vo Thi E' },
+  ];
+}
+
+/**
+ * "Cơ sở dữ liệu" của server giả, nằm trong bộ nhớ.
+ * Chỉ các file trong src/api được import file này. UI không được import trực tiếp.
+ * Tắt hẳn app rồi mở lại thì dữ liệu về trạng thái ban đầu.
+ */
+export const db: Database = {
+  seats: createSeedSeats(),
+  bookings: createSeedBookings(),
+  nextBookingNumber: 5,
+};
+
+Giải thích:
+
+Dữ liệu mẫu: 3 zone × 6 ghế = 18 ghế (A01..A06, B01..B06, C01..C06). Ghế thứ chẵn trong zone (A01, A03, A05...) có ổ cắm.
+Booking mẫu dùng toDateString(new Date()), tức ngày hôm nay. Nếu ghi ngày cố định thì ngày mai occupancy sẽ về 0 và bạn không biết vì sao. Booking b4 (B02, 14:00-16:00) khớp đúng ví dụ trong đề, nên sau này bạn thử đặt B02 15:00-17:00 sẽ thấy nó bị chặn.
+nextBookingNumber để server sinh id booking (b5, b6...). Ta dùng sau ở Phase 10.
+File 3: src/api/seats-api.ts
+typescript
+import { ApiError, simulateRequest } from '@/api/client';
+import { db } from '@/api/mock-db';
+import type { Seat, SeatInput } from '@/types';
+
+const copySeat = (seat: Seat): Seat => ({ ...seat });
+
+function findSeat(id: string): Seat {
+  const seat = db.seats.find((s) => s.id === id);
+  if (!seat) {
+    throw new ApiError('NOT_FOUND', `Seat ${id} not found.`);
+  }
+  return seat;
+}
+
+export function getSeats(): Promise<Seat[]> {
+  return simulateRequest(() => db.seats.map(copySeat));
+}
+
+export function getSeat(id: string): Promise<Seat> {
+  return simulateRequest(() => copySeat(findSeat(id)));
+}
+
+export function createSeat(seat: Seat): Promise<Seat> {
+  return simulateRequest(() => {
+    const id = seat.id.trim().toUpperCase();
+    const zone = seat.zone.trim();
+    if (!id || !zone) {
+      throw new ApiError('VALIDATION', 'Seat id and zone are required.');
+    }
+    if (db.seats.some((s) => s.id === id)) {
+      throw new ApiError('CONFLICT', `Seat ${id} already exists.`);
+    }
+    const created: Seat = { id, zone, hasOutlet: seat.hasOutlet };
+    db.seats.push(created);
+    return copySeat(created);
+  });
+}
+
+export function updateSeat(id: string, input: SeatInput): Promise<Seat> {
+  return simulateRequest(() => {
+    const seat = findSeat(id);
+    const zone = input.zone.trim();
+    if (!zone) {
+      throw new ApiError('VALIDATION', 'Zone is required.');
+    }
+    seat.zone = zone;
+    seat.hasOutlet = input.hasOutlet;
+    return copySeat(seat);
+  });
+}
+
+Giải thích:
+
+Mỗi hàm trả về Promise. Code phía UI sẽ await chúng qua TanStack Query, và đổi sang API thật sau này thì chỉ sửa trong src/api/.
+createSeat chuẩn hoá id bằng trim().toUpperCase(), nên "a07" và "A07" là cùng một ghế. Server kiểm tra lại dù UI cũng sẽ kiểm tra, vì không được tin dữ liệu từ client (cùng tinh thần "conflict phải kiểm tra ở cả hai tầng" của đề).
+updateSeat(id, input) không cho đổi id: id là tham số riêng, còn SeatInput không có trường id. Đây là lý do ta đã tạo Omit<Seat, 'id'> ở bước 3.1.
+Trùng id trả CONFLICT. Đây cũng là lỗi cần xử lý khi replay outbox tạo ghế lúc offline.
+
+Me : LOG  getSeats OK 18
+ LOG  took ms 619
+ LOG  getSeat A01 OK {"hasOutlet": true, "id": "A01", "zone": "A"}
+ LOG  getSeat Z99 ERROR ApiError NOT_FOUND
+ LOG  createSeat d01 OK {"hasOutlet": false, "id": "D01", "zone": "D"}
+ LOG  createSeat d01 again ERROR ApiError CONFLICT
+ LOG  updateSeat D01 OK {"hasOutlet": true, "id": "D01", "zone": "D"}
+ LOG  getSeats forced fail ERROR ApiError NETWORK
+ LOG  getSeats after fail OK 19
+Đây là output và 2 lẫn 3 đều oke tsc lint ko có lỗi và 3 cx ko có lỗi
+
+Me : Đã chạy thử ổn r bây h tới phần tiếp theo nhé
+Bước 3.4: Auth API và đọc bookings
+
+Mục tiêu: có "server" để đăng nhập (trả về token) và xác minh token. Kèm hàm getBookings chỉ để đọc. createBooking cần hasConflict, nên để Phase 10.
+
+Một cái bẫy phải xử lý trước khi viết code
+
+mock-db nằm trong bộ nhớ, nên tắt app rồi mở lại thì mọi thứ trên "server" reset. Nếu server lưu danh sách token đang hợp lệ trong db, thì sau khi restart token trong SecureStore không còn được server nhận ra, và session sẽ không khôi phục được. Đề yêu cầu chính xác điều này ("session surviving an app restart").
+
+Nên ta cho token tự mang thông tin, giống ý tưởng của JWT, và server chỉ giải mã ra để tìm user:
+
+token = "mock-token:" + username
+
+Server thật sẽ ký token bằng chữ ký mật mã để không ai giả mạo được. Mock của ta thì không cần, và ta ghi rõ điều đó là giới hạn của mock trong README.
+
+Từ đây có thêm một hệ quả cần biết: seat bạn tạo (như D01) cũng biến mất khi restart app, vì db.seats chỉ ở trong bộ nhớ. Ở Phase 12, cache offline có thể còn ghế mà "server" đã mất nó. Bạn nên ghi điều này vào README (mục known limitations).
+
+Các quyết định
+Vấn đề	Quyết định	Lý do
+Đăng nhập bằng gì?	username + password, đề chưa quy định	Đơn giản, giống app thật
+Tài khoản mock	2 tài khoản (xem code)	Có người thứ hai để thử kịch bản "User B đặt trước"
+Server trả gì?	{ token, user }, không bao giờ trả password	Đúng như server thật
+Sign out	Xoá phía client (SecureStore, Zustand, cache)	Token không trạng thái nên server không có gì để huỷ. Server thật sẽ thu hồi token
+Mật khẩu thô trong code	Chấp nhận, vì đây là mock	Server thật lưu hash. Ghi vào README
+
+Giải thích:
+
+signIn kiểm tra rỗng (VALIDATION) trước khi so khớp, và sai thông tin trả UNAUTHORIZED. UI sẽ phân biệt hai lỗi này để hiện thông báo phù hợp.
+Cùng một thông báo "Wrong username or password" cho cả trường hợp sai username lẫn sai password: server thật cũng làm vậy để kẻ tấn công không dò được username nào tồn tại.
+getCurrentUser(token) sẽ được gọi ở Phase 8, khi app mở lại: đọc token từ SecureStore, hỏi server "token này của ai", rồi đưa user vào Zustand. Nếu token sai hoặc hết hạn thì bị UNAUTHORIZED và app chuyển về sign-in.
+studentName của booking sau này lấy từ user.studentName, khớp field studentName mà đề đưa vào Booking.
+
+Ý tưởng chính của Phase 4
+
+TanStack Query quản lý server state: dữ liệu nằm ở nơi khác (server), app chỉ giữ bản sao có thể lỗi thời. Nó lo hộ ba việc mà nếu tự làm bằng useState + useEffect bạn sẽ phải viết lại ở mỗi màn hình:
+
+Việc	Nếu tự làm	Với TanStack Query
+Trạng thái loading/error	3 biến useState	isPending, isError, error
+Cache	tự giữ object	tự cache theo queryKey
+Thử lại	tự viết	retry và refetch()
+
+Ba khái niệm bạn cần nói được:
+
+queryKey: "địa chỉ" của dữ liệu trong cache. Ta dùng dạng phân cấp: ['seats'] cho danh sách, ['seats', 'A01'] cho một ghế. Khi gọi invalidateQueries({ queryKey: ['seats'] }), mọi key bắt đầu bằng ['seats'] bị đánh dấu cũ, cả danh sách lẫn từng ghế. Đây là lý do ta thiết kế key như vậy.
+staleTime: bao lâu dữ liệu còn "tươi". Trong thời gian này, mở lại màn hình sẽ dùng cache mà không gọi API. Ta chọn 30 giây.
+retry: số lần tự thử lại khi lỗi. Mặc định là 3 lần với thời gian chờ tăng dần, nghĩa là màn hình lỗi phải đợi vài giây mới hiện. Ta đặt 1.
+
+src/components/query-state.tsx
+
+Giải thích trước khi đọc code:
+
+Component nhận kết quả của useQuery và một hàm children nhận dữ liệu đã chắc chắn tồn tại. Nhờ vậy màn hình nào cũng chỉ cần viết phần "content", còn ba trạng thái kia dùng chung.
+Ta kiểm tra data === undefined thay vì chỉ isPending. Lý do liên quan trực tiếp đến đề: khi refetch thất bại (ví dụ mất mạng) nhưng đã có dữ liệu cũ, ta phải tiếp tục hiển thị dữ liệu cũ chứ không bật màn hình lỗi. Đó là yêu cầu "last successful load is shown" ở Phase 12.
+Nút Retry gọi query.refetch() thật, đúng yêu cầu của đề.
+Loading có accessibilityRole="progressbar" và nhãn "Loading", để screen reader đọc được. Lỗi có accessibilityRole="alert" để được đọc ngay khi xuất hiện.
+
