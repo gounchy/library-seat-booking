@@ -36,3 +36,9 @@ export function isValidDate(date: string): boolean {
     parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
   );
 }
+/** Date -> "HH:mm" theo giờ địa phương. */
+export function formatHourMinute(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}

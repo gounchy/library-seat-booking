@@ -1,10 +1,13 @@
-import { isValidTime, minutesOfDay, toDateString, toMinutes } from '@/lib/time';
+import { formatHourMinute, isValidTime, minutesOfDay, toDateString, toMinutes } from '@/lib/time';
 
 describe('time helpers', () => {
   it('converts HH:mm to minutes since midnight', () => {
     expect(toMinutes('00:00')).toBe(0);
     expect(toMinutes('14:00')).toBe(840);
     expect(toMinutes('23:59')).toBe(1439);
+  });
+  it('formats the local time as HH:mm', () => {
+    expect(formatHourMinute(new Date(2026, 8, 19, 9, 5))).toBe('09:05');
   });
 
   it('validates the HH:mm format', () => {

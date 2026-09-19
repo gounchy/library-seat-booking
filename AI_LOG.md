@@ -867,3 +867,21 @@ Optimistic update (cập nhật giao diện trước khi server trả lời, l�
 "Taken" nghĩa là gì (đề chưa quy định, tôi chọn)
 
 Ghế là taken now khi có booking bao phủ thời điểm hiện tại. Booking cho giờ khác vẫn hiện trong danh sách booking của ghế ở màn chi tiết. Ta hiển thị trạng thái này ở cả danh sách (nơi người dùng chọn ghế) lẫn màn chi tiết.
+
+Ý tưởng chính
+
+Occupancy = số ghế đang có người đặt / tổng số ghế, theo từng zone. Ví dụ Zone A có 10 ghế, 4 ghế đang có booking bao phủ thời điểm hiện tại thì 4 / 10 × 100 = 40%.
+
+Các bước tính, đúng như bạn liệt kê:
+
+Lấy now (ngày và giờ hiện tại, theo giờ địa phương).
+Lọc các booking có date là hôm nay và start <= now < end (dùng isBookingActiveAt từ Phase 6).
+Lấy seatId của các booking đó bỏ vào một Set.
+Duyệt danh sách ghế, gom theo zone, đếm tổng và đếm ghế có id nằm trong Set.
+percent = round(taken / total × 100).
+
+Vì sao Set: hai lý do. Tra cứu has(id) chạy nhanh. Và nó loại trùng: nếu dữ liệu có hai booking cùng ghế cùng phủ thời điểm hiện tại, ghế đó vẫn chỉ được tính một lần. Nếu đếm thẳng theo số booking thì ghế bị tính hai lần và phần trăm sai. Ta duyệt danh sách ghế chứ không duyệt booking, nên một booking của ghế không tồn tại cũng bị bỏ qua.
+
+Không lưu, chỉ tính: Seat không có trường occupancy. Lý do như Phase 5: đó là dữ liệu suy ra được từ seats + bookings + now. Nếu lưu, mỗi lần có booking mới hoặc thời gian trôi qua nó lại lệch. Đây là yêu cầu bắt buộc của đề.
+
+useMemo và dependency: useMemo ghi nhớ kết quả tính toán và chỉ tính lại khi dependency đổi. Ta viết [seats, bookings, now], tức ba giá trị, chứ không chỉ seats và bookings. Quy tắc là mọi giá trị bên ngoài mà hàm bên trong dùng phải nằm trong danh sách. Thiếu now thì phần trăm sẽ đứng yên khi thời gian trôi (lỗi thật, và linter sẽ cảnh báo). Thực tế project bật reactCompiler, nên compiler cũng tự ghi nhớ giúp và useMemo thủ công ở đây gần như dư. Ta vẫn viết vì nó rõ ràng, an toàn, và giảng viên hay hỏi.
