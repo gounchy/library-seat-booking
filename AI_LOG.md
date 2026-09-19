@@ -618,3 +618,48 @@ Ta kiểm tra data === undefined thay vì chỉ isPending. Lý do liên quan tr�
 Nút Retry gọi query.refetch() thật, đúng yêu cầu của đề.
 Loading có accessibilityRole="progressbar" và nhãn "Loading", để screen reader đọc được. Lỗi có accessibilityRole="alert" để được đọc ngay khi xuất hiện.
 
+Sau Phase 4
+Phase 12 sẽ nối onlineManager với thư viện đo mạng (NetInfo). Tài liệu TanStack cho React Native hướng dẫn nối nó với NetInfo hoặc expo-network, và nối focusManager với AppState, vì các cơ chế phát hiện mạng/focus mặc định của web không có trong React Native. Trang tài liệu React Native của TanStack Query đưa ví dụ cấu hình onlineManager qua NetInfo và cập nhật focusManager qua sự kiện thay đổi AppState. Ta chưa làm bây giờ. 
+TanStack
+gcTime (thời gian giữ cache không dùng) phải được chỉnh khi bật lưu cache bền vững, nếu không cache sẽ bị dọn trước khi kịp khôi phục. Ta sẽ xử lý ở Phase 12.
+
+Me : Kết quả đúng với những gì bạn dự đoán , tiếp theo tôi cần làm gì 
+Claude : Ý tưởng chính: client state và server state
+Dữ liệu	Ở đâu	Vì sao
+Danh sách ghế	TanStack Query (đã làm)	Thuộc về server, có thể lỗi thời
+searchText, selectedZone	Zustand	Chỉ tồn tại trong app, không có "bản gốc" nào trên server
+Danh sách ghế đã lọc	Không lưu ở đâu cả	Tính từ hai thứ trên mỗi lần render
+Danh sách zone để hiện nút	Không lưu, tính từ seats	Thêm ghế zone "D" thì nút "D" tự xuất hiện
+
+Nguyên tắc là mỗi dữ liệu chỉ có một nguồn sự thật. Nếu bạn copy ghế vào Zustand để lọc, bạn phải tự đồng bộ hai bản mỗi lần tạo/sửa ghế, và sớm muộn chúng lệch nhau.
+
+Selectors là hàm chọn đúng phần state mà component cần:
+
+ts
+const searchText = useFilterStore((s) => s.searchText);   // chỉ re-render khi searchText đổi
+const everything = useFilterStore();                       // re-render khi BẤT KỲ thứ gì đổi
+
+Đề yêu cầu "store with selectors", nên ta luôn dùng dạng đầu. Ta chọn từng trường một vì chúng là giá trị nguyên thủy (string, null). Tài liệu cộng đồng lưu ý một cái bẫy ở Zustand v5: selector trả về object/mảng mới mỗi lần có thể gây lỗi "Maximum update depth exceeded". Khi cần lấy nhiều trường một lúc, phải bọc bằng useShallow. Ta tránh bẫy này bằng cách gọi selector riêng cho từng trường.
+Bước 5.3: Logic lọc thuần (src/lib/filter-seats.ts)
+
+Logic thuần (không dính React) đặt trong lib/ để dễ test và dễ giải thích.
+
+typescript
+import type { Seat } from '@/types';
+
+/** Lọc theo zone và tìm theo id (không phân biệt hoa/thường, khớp một phần). */
+export function filterSeats(seats: Seat[], searchText: string, zone: string | null): Seat[] {
+  const query = searchText.trim().toLowerCase();
+  return seats.filter((seat) => {
+    const matchesZone = zone === null || seat.zone === zone;
+    const matchesId = query === '' || seat.id.toLowerCase().includes(query);
+    return matchesZone && matchesId;
+  });
+}
+
+/** Danh sách zone không trùng, sắp xếp theo thứ tự chữ cái. */
+export function getZones(seats: Seat[]): string[] {
+  return [...new Set(seats.map((seat) => seat.zone))].sort();
+}
+
+Hai điều kiện dùng &&, nghĩa là ghế phải thoả cả zone lẫn từ khoá. Ô tìm kiếm rỗng và zone null đều là "không lọc". Set loại trùng lặp.

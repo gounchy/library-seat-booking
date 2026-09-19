@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DevPanel } from '@/components/dev-panel';
@@ -6,24 +6,8 @@ import { QueryState } from '@/components/query-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { SeatList } from '@/features/seats/seat-list';
 import { useSeats } from '@/features/seats/use-seats';
-import type { Seat } from '@/types';
-
-function SeatRow({ seat }: { seat: Seat }) {
-  const outlet = seat.hasOutlet ? 'Has outlet' : 'No outlet';
-  return (
-    <ThemedView
-      type="backgroundElement"
-      style={styles.row}
-      accessible
-      accessibilityLabel={`Seat ${seat.id}, zone ${seat.zone}, ${outlet}`}>
-      <ThemedText type="default">Seat {seat.id}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Zone {seat.zone} · {outlet}
-      </ThemedText>
-    </ThemedView>
-  );
-}
 
 export default function SeatsScreen() {
   const seatsQuery = useSeats();
@@ -39,14 +23,7 @@ export default function SeatsScreen() {
           isEmpty={(seats) => seats.length === 0}
           emptyTitle="No seats yet"
           emptyMessage="Seats you add will appear here.">
-          {(seats) => (
-            <FlatList
-              data={seats}
-              keyExtractor={(seat) => seat.id}
-              renderItem={({ item }) => <SeatRow seat={item} />}
-              contentContainerStyle={styles.list}
-            />
-          )}
+          {(seats) => <SeatList seats={seats} />}
         </QueryState>
         <DevPanel />
       </SafeAreaView>
@@ -61,14 +38,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.three,
-  },
-  list: {
     gap: Spacing.two,
-    paddingVertical: Spacing.three,
-  },
-  row: {
-    padding: Spacing.three,
-    borderRadius: Spacing.two,
-    gap: Spacing.one,
   },
 });

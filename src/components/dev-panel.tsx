@@ -3,12 +3,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { setSimulation } from '@/api/client';
 import { AppButton } from '@/components/app-button';
-import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { seatKeys } from '@/features/seats/use-seats';
 import { queryClient } from '@/lib/query-client';
 
 export function DevPanel() {
+  const [expanded, setExpanded] = useState(false);
   const [failAll, setFailAll] = useState(false);
 
   if (!__DEV__) {
@@ -22,19 +22,25 @@ export function DevPanel() {
 
   return (
     <View style={styles.container}>
-      <ThemedText type="small" themeColor="textSecondary">
-        Dev tools (hidden in production)
-      </ThemedText>
       <AppButton
         variant="secondary"
-        label={`Simulate server errors: ${failAll ? 'ON' : 'OFF'}`}
-        onPress={toggleFailAll}
+        label={expanded ? 'Hide dev tools' : 'Show dev tools'}
+        onPress={() => setExpanded(!expanded)}
       />
-      <AppButton
-        variant="secondary"
-        label="Clear seats cache and reload"
-        onPress={() => void queryClient.resetQueries({ queryKey: seatKeys.all })}
-      />
+      {expanded ? (
+        <>
+          <AppButton
+            variant="secondary"
+            label={`Simulate server errors: ${failAll ? 'ON' : 'OFF'}`}
+            onPress={toggleFailAll}
+          />
+          <AppButton
+            variant="secondary"
+            label="Clear seats cache and reload"
+            onPress={() => void queryClient.resetQueries({ queryKey: seatKeys.all })}
+          />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -42,6 +48,6 @@ export function DevPanel() {
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.two,
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.two,
   },
 });
