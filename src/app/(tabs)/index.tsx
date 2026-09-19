@@ -1,3 +1,4 @@
+import { AccountBar } from '@/components/account-bar';
 import { AppButton } from '@/components/app-button';
 import { DevPanel } from '@/components/dev-panel';
 import { QueryState } from '@/components/query-state';
@@ -18,6 +19,7 @@ export default function SeatsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <AccountBar />
         <View style={styles.header}>
           <ThemedText type="subtitle" accessibilityRole="header">
             Seats

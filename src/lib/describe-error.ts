@@ -8,10 +8,9 @@ export function describeError(error: unknown): string {
         return 'Cannot reach the server. Check your connection and try again.';
       case 'NOT_FOUND':
         return 'We could not find what you were looking for.';
-      case 'UNAUTHORIZED':
-        return 'Your session is not valid. Please sign in again.';
       case 'VALIDATION':
       case 'CONFLICT':
+      case 'UNAUTHORIZED':
         return error.message;
     }
   }

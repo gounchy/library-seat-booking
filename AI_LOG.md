@@ -755,3 +755,49 @@ Lỗi chỉ hiện sau lần bấm nút đầu tiên (submitted). Nếu hiện n
 Ở chế độ sửa, id chỉ hiển thị, không cho nhập, vì updateSeat không cho đổi id.
 Lỗi từ server (submitError, ví dụ trùng id) hiển thị bằng describeError, có accessibilityRole="alert" để screen reader đọc ngay.
 Công tắc ổ cắm dùng Switch, nằm trong một hàng cao tối thiểu 44 dp. Màu lấy từ token.
+
+Me : Sau khi thử thì đã thành công theo lời bạn nói , bây h hãy hướng dẫn tiếp giúp tôi
+Phase 7 xong. Tôi đã đối chiếu tài liệu hiện hành cho ba thứ Phase 8 phụ thuộc vào:
+
+Route được bảo vệ: dùng Stack.Protected với prop guard (từ SDK 53). Khi màn hình bị chặn, router đưa người dùng về route neo (anchor) hoặc màn hình đầu tiên còn khả dụng. Khi guard chuyển từ true sang false, toàn bộ lịch sử điều hướng của các màn hình đó bị xoá. 
+expo
+SecureStore: vẫn là ba hàm bất đồng bộ setItemAsync, getItemAsync (trả string | null) và deleteItemAsync.
+Splash: preventAutoHideAsync() giữ splash và hideAsync() tắt nó, đúng mẫu ta cần.
+Phase 8: Đăng nhập, đăng xuất, route được bảo vệ
+Ý tưởng chính
+Vì sao SecureStore, không phải AsyncStorage
+	AsyncStorage	SecureStore
+Lưu ở đâu	File thường trên thiết bị	Mã hoá bằng Keychain (iOS) hoặc Keystore (Android)
+Đọc được khi	Máy root/jailbreak, bản sao lưu	Rất khó nếu không mở khoá thiết bị
+Dùng cho	Cache, cài đặt	Token, mật khẩu, thông tin nhạy cảm
+
+Đề yêu cầu "Secrets in SecureStore only", nên token tuyệt đối không được vào AsyncStorage. Điều này kéo theo hai quy tắc: không bọc auth-store bằng persist của Zustand (vì nó lưu vào AsyncStorage), và store không giữ token trong state, chỉ giữ user. Token nằm trong SecureStore, và khi server thật cần token thì đọc ra lúc gọi API.
+
+Ba trạng thái, không phải hai
+
+Nếu chỉ có "đã đăng nhập / chưa", lúc mở app trạng thái mặc định là "chưa", và màn hình đăng nhập nháy lên trước khi session được khôi phục. Ta thêm trạng thái thứ ba:
+
+restoring  ──(đọc SecureStore xong)──►  signedIn   hoặc   signedOut
+
+Trong lúc restoring, splash screen vẫn che, ta chưa vẽ gì.
+
+Luồng dữ liệu
+Sign in:   form → signIn() → mock API → { token, user }
+                                          ├─► SecureStore.setItemAsync   (bền vững)
+                                          └─► Zustand { status: 'signedIn', user }
+                                                  └─► Stack.Protected đổi guard → tự chuyển màn hình
+
+Mở app:    splash → SecureStore.getItemAsync → getCurrentUser(token)
+                      ├─ không có token           → signedOut
+                      ├─ server nói UNAUTHORIZED   → xoá session → signedOut
+                      ├─ server thành công         → signedIn (user mới nhất)
+                      └─ lỗi mạng                  → signedIn (dùng user đã lưu)  ← cho phép dùng offline
+
+Sign out:  xoá SecureStore + xoá cache TanStack Query + reset bộ lọc + user = null
+
+Nhánh "lỗi mạng" quan trọng vì đề yêu cầu app chạy được offline. Nếu ta coi mọi lỗi khi xác minh token là "hết phiên", người dùng mở app lúc mất mạng sẽ bị đá ra ngoài. Vì vậy ta lưu cả user cùng token trong SecureStore, để có tên hiển thị khi không liên lạc được server.
+
+"Truly ending" khi đăng xuất
+
+Đề yêu cầu phiên "kết thúc thật sự". Ta xoá đủ ba nơi: SecureStore (không còn khôi phục được), cache TanStack Query (không còn dữ liệu của người trước), bộ lọc Zustand. Khi Phase 12 thêm cache bền vững và outbox, hai thứ đó cũng phải bị xoá ở đây. Tôi ghi lại để ta không quên.
+
