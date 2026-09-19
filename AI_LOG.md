@@ -344,4 +344,62 @@ Bước	Nội dung
 2.3	Dọn hex còn sót ngoài theme.ts (cần kết quả lệnh grep của bạn)
 2.4	Tạo AppButton có accessibilityRole, accessibilityLabel, minHeight: MinTouchTarget, dùng token; hiển thị thử trên màn hình để đổi light/dark bằng mắt
 2.5	Quyết định xử lý code demo của template
+4. Bước 2.4: component AppButton
+
+Đề yêu cầu mọi control có role và label, cùng vùng chạm 44 × 44. Nếu mỗi nút tự lo, bạn sẽ quên ở đâu đó. Vì vậy ta viết một nút chuẩn và dùng khắp app.
+
+Giải thích trước khi có code:
+
+Dùng Pressable (component bấm được cơ bản của React Native), không dùng TouchableOpacity. Pressable là API hiện hành và cho phép style thay đổi theo trạng thái pressed.
+accessibilityRole="button" báo cho screen reader (TalkBack trên Android) đây là nút. Nó đọc "Đặt ghế, button". Thiếu role, người dùng chỉ nghe chữ như một đoạn văn thường.
+accessibilityLabel là nội dung được đọc. Với nút có chữ, label = chữ trên nút. Nút chỉ có icon thì label là thứ duy nhất mô tả nó.
+accessibilityState={{ disabled }} để screen reader nói "dimmed/disabled" khi nút bị vô hiệu.
+minHeight và minWidth = MinTouchTarget (44) từ token.
+Màu lấy hết từ useTheme(), không có hex nào trong file. Nút phụ (secondary) có viền border để vẫn thấy được trên nền.
+Ta đặt tên file theo quy ước kebab-case của template (themed-text.tsx...), nên là app-button.tsx. Các component sau (như "4 trạng thái") cũng theo quy ước này.
+5. Bạn gửi lại cho tôi
+
+Để dọn code demo và sửa themed-text.tsx mà không làm hỏng app, tôi cần xem nội dung:
+
+src/components/themed-text.tsx
+src/app/_layout.tsx
+src/components/app-tabs.tsx
+src/app/index.tsx
+
+Me : Đưa code cho AI và tôi đã hoàn thành các công đoạn ở phía trước , bạn hãy hướn dẫn cho tôi phần tiếp theo 
+Bước 2.6: Sửa themed-text.tsx
+
+Ý tưởng: bỏ hex khỏi StyleSheet, và chọn màu ngay từ đầu bằng token. Nếu type là linkPrimary và người gọi không truyền themeColor, thì dùng primary.
+
+Sửa phần thân component:
+
+tsx
+export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+  const theme = useTheme();
+  const color = theme[themeColor ?? (type === 'linkPrimary' ? 'primary' : 'text')];
+
+  return (
+    <Text
+      style={[
+        { color },
+        type === 'default' && styles.default,
+        // ... các dòng type khác giữ nguyên ...
+        style,
+      ]}
+      {...rest}
+    />
+  );
+}
+
+Và trong StyleSheet.create, xoá dòng color: '#3c87f7', khỏi linkPrimary:
+
+tsx
+linkPrimary: {
+  lineHeight: 30,
+  fontSize: 14,
+},
+
+Những chỗ còn lại giữ nguyên. Vì primary có trong cả light và dark, TypeScript chấp nhận theme['primary']. Contrast của primary trên background đã tính ở Phase 2: khoảng 6.7:1 ở light và 11.7:1 ở dark, theo phép tính tay của tôi.
+
+Lưu ý accessibility: ThemedText chỉ là chữ, nó không tự thành link. Khi bạn dùng nó để bấm được, phải tự thêm accessibilityRole="link" ở nơi dùng.
 
