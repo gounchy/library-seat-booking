@@ -801,3 +801,69 @@ Nhánh "lỗi mạng" quan trọng vì đề yêu cầu app chạy được offl
 
 Đề yêu cầu phiên "kết thúc thật sự". Ta xoá đủ ba nơi: SecureStore (không còn khôi phục được), cache TanStack Query (không còn dữ liệu của người trước), bộ lọc Zustand. Khi Phase 12 thêm cache bền vững và outbox, hai thứ đó cũng phải bị xoá ở đây. Tôi ghi lại để ta không quên.
 
+Me : Tôi đã thực hiện phần đăng nhập xong rồi , hãy tới phần tiếp theo
+Phase 9: Phát hiện chồng giờ (overlap) và test tự động
+Ý tưởng chính
+Ba điều kiện, phải thoả cả ba
+
+Một booking mới xung đột với booking cũ khi:
+
+cùng ghế   VÀ   cùng ngày   VÀ   khung giờ chồng nhau
+
+Hai điều đầu là so sánh bằng (===). Chỉ điều thứ ba cần toán. Đặt ghế khác cùng giờ thì được (ghế khác nhau), đặt cùng ghế ngày khác thì được (ngày khác nhau).
+
+Suy ra công thức từ hai khoảng không chồng nhau
+
+Hai khoảng a và b không chồng nhau khi một khoảng kết thúc trước hoặc đúng lúc khoảng kia bắt đầu:
+
+a.end <= b.start     HOẶC     b.end <= a.start
+
+Chồng nhau là phủ định của câu trên. Theo định luật De Morgan, "HOẶC" thành "VÀ" và <= thành >:
+
+a.end > b.start     VÀ     b.end > a.start
+
+Viết lại cho dễ đọc thành a.start < b.end && b.start < a.end. Đọc thành lời: mỗi khoảng phải bắt đầu trước khi khoảng kia kết thúc.
+
+Timeline và số liệu (đổi giờ sang phút: 14:00 = 840, 16:00 = 960, ...)
+Chồng một phần:    14:00 ───── 16:00
+                          15:00 ───── 17:00
+                   840 < 1020 ✓   và   900 < 960 ✓   →  CONFLICT
+
+Liền kề:           14:00 ───── 16:00
+                                16:00 ───── 18:00
+                   840 < 1080 ✓   và   960 < 960 ✗   →  KHÔNG conflict
+
+Chứa nhau:         14:00 ─────────────── 18:00
+                          15:00 ── 16:00
+                   840 < 960 ✓    và   900 < 1080 ✓  →  CONFLICT
+
+Trường hợp liền kề là chỗ dễ sai nhất. Ta dùng < chứ không phải <=, tức giờ kết thúc là loại trừ: khoảng 14:00-16:00 chiếm từ 14:00 đến trước 16:00 một chút, nên người sau nhận ghế đúng 16:00 mà không đụng ai. Quy ước này cũng khớp với isBookingActiveAt ở Phase 6 (start <= now < end).
+
+Vì sao phải kiểm tra start < end trước khi kiểm tra overlap
+
+Khung giờ đảo ngược (16:00-14:00) là dữ liệu vô nghĩa, và công thức sẽ âm thầm trả về false thay vì báo lỗi. Ví dụ 16:00-14:00 so với 15:00-17:00: điều kiện đầu 960 < 1020 đúng, nhưng điều kiện sau 900 < 840 sai, nên kết quả "không xung đột". Nếu để lọt vào database thì ghế bị đặt "trống" mà thực chất chồng với booking khác. Vì vậy validateTimeSlot phải chạy trước, và overlaps giả định đầu vào đã hợp lệ.
+
+Claude : Phase 10: Đặt ghế
+
+Đây là phần nối mọi thứ lại: form, overlap, mock API, cache và route được bảo vệ.
+
+Ý tưởng chính
+Kiểm tra ở hai tầng
+Tầng	Vai trò	Vì sao cần
+UI (form)	Báo lỗi ngay khi gõ, có câu chữ thân thiện	Người dùng không phải chờ 0,6 giây mới biết mình gõ sai
+Mock API ("server")	Từ chối booking sai dù client nói gì	UI chỉ dùng dữ liệu cache, có thể đã cũ. Người khác có thể vừa đặt xong. Client cũng có thể bị bỏ qua hoàn toàn
+
+Chỉ kiểm tra ở UI là lỗi thiết kế kinh điển: hai người cùng thấy một khung giờ trống, cùng bấm đặt, và cả hai đều thành công. Server phải là người quyết định cuối cùng. Cả hai tầng dùng chung cùng một hàm (validateBooking, findConflict, describeConflict) nên thông báo giống nhau và không phải viết hai lần.
+
+Cập nhật cache sau khi đặt
+Cách	Làm gì	Ưu	Nhược
+invalidateQueries	Đánh dấu cache cũ, tải lại từ server	Luôn khớp server, nhận cả thay đổi của người khác	Có độ trễ (0,6 giây với mock), giao diện chưa đổi ngay
+setQueryData	Ghép booking vừa tạo vào cache	Tức thì	Chỉ biết booking của mình, có thể lệch với server
+
+Ta dùng cả hai: setQueryData để ghế đổi trạng thái ngay lập tức (đúng yêu cầu "marked taken immediately"), rồi invalidateQueries chạy nền để đối chiếu với server. Ta không chờ invalidateQueries xong mới đóng form, nên form đóng ngay sau khi server trả lời.
+
+Optimistic update (cập nhật giao diện trước khi server trả lời, lỗi thì hoàn tác) là bước tiếp theo, và là ứng viên cho "stretch idea" trong README, không bắt buộc. Ta chưa làm.
+
+"Taken" nghĩa là gì (đề chưa quy định, tôi chọn)
+
+Ghế là taken now khi có booking bao phủ thời điểm hiện tại. Booking cho giờ khác vẫn hiện trong danh sách booking của ghế ở màn chi tiết. Ta hiển thị trạng thái này ở cả danh sách (nơi người dùng chọn ghế) lẫn màn chi tiết.

@@ -31,7 +31,11 @@ export default function SeatsScreen() {
           isEmpty={(seats) => seats.length === 0}
           emptyTitle="No seats yet"
           emptyMessage="Seats you add will appear here.">
-          {(seats) => <SeatList seats={seats} />}
+          {(seats) => (
+            <View style={styles.seatListContainer}>
+              <SeatList seats={seats} />
+            </View>
+          )}
         </QueryState>
         <DevPanel />
       </SafeAreaView>
@@ -52,5 +56,8 @@ const styles = StyleSheet.create({
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
+},
+seatListContainer: {
+  flex: 1,
 },
 });

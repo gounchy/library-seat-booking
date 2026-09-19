@@ -57,6 +57,13 @@ function SeatDetail({ seat, bookingsQuery }: SeatDetailProps) {
         <ThemedText>{seat.hasOutlet ? 'Has power outlet' : 'No power outlet'}</ThemedText>
         <ThemedText>{status}</ThemedText>
       </ThemedView>
+
+      <AppButton
+        label="Book this seat"
+        onPress={() =>
+          router.push({ pathname: '/book/[seatId]', params: { seatId: seat.id } })
+        }
+      />
       <AppButton
         variant="secondary"
         label="Edit seat"

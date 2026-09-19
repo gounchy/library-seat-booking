@@ -23,3 +23,16 @@ export function toDateString(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** "YYYY-MM-DD" có phải một ngày có thật không (loại "2026-02-30")? */
+export function isValidDate(date: string): boolean {
+  if (!DATE_PATTERN.test(date)) {
+    return false;
+  }
+  const [year, month, day] = date.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return (
+    parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
+  );
+}

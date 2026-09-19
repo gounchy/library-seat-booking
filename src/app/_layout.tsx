@@ -6,6 +6,9 @@ import { useColorScheme } from 'react-native';
 
 import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/store/auth-store';
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,8 +39,10 @@ function RootNavigator() {
         <Stack.Screen name="seat/[id]" />
         <Stack.Screen name="seat/new" />
         <Stack.Screen name="seat/[id]/edit" />
+        <Stack.Screen name="book/[seatId]" />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>
+        
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
     </Stack>

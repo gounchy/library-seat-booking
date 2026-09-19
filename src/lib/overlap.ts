@@ -38,3 +38,6 @@ export function findConflict(
 export function hasConflict(existing: Booking[], candidate: BookingCandidate): boolean {
   return findConflict(existing, candidate) !== undefined;
 }
+export function describeConflict(booking: Booking): string {
+  return `Seat ${booking.seatId} is already booked from ${booking.timeSlot.start} to ${booking.timeSlot.end} on ${booking.date}.`;
+}
