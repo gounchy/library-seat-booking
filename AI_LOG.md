@@ -663,3 +663,95 @@ export function getZones(seats: Seat[]): string[] {
 }
 
 Hai điều kiện dùng &&, nghĩa là ghế phải thoả cả zone lẫn từ khoá. Ô tìm kiếm rỗng và zone null đều là "không lọc". Set loại trùng lặp.
+
+Me : Tôi đã xong phần này rồi và nó gặp 1 lỗi ko hiện đc button clear 
+Claude : Cách sửa (nếu đúng là layout)
+
+DevPanel là công cụ của lập trình viên nhưng đang chiếm chỗ cố định. Ta cho nó thu gọn mặc định, mở khi cần. Bạn sẽ cần nó ở Phase 10 và 12, nên không xoá. Nó còn giúp màn hình gọn hơn khi bạn demo cho giảng viên.
+
+Thay toàn bộ src/components/dev-panel.tsx:
+
+tsx
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { setSimulation } from '@/api/client';
+import { AppButton } from '@/components/app-button';
+import { Spacing } from '@/constants/theme';
+import { seatKeys } from '@/features/seats/use-seats';
+import { queryClient } from '@/lib/query-client';
+
+export function DevPanel() {
+  const [expanded, setExpanded] = useState(false);
+  const [failAll, setFailAll] = useState(false);
+
+  if (!__DEV__) {
+    return null;
+  }
+
+  const toggleFailAll = () => {
+    setSimulation({ failAll: !failAll });
+    setFailAll(!failAll);
+  };
+
+  return (
+    <View style={styles.container}>
+      <AppButton
+        variant="secondary"
+        label={expanded ? 'Hide dev tools' : 'Show dev tools'}
+        onPress={() => setExpanded(!expanded)}
+      />
+      {expanded ? (
+        <>
+          <AppButton
+            variant="secondary"
+            label={`Simulate server errors: ${failAll ? 'ON' : 'OFF'}`}
+            onPress={toggleFailAll}
+          />
+          <AppButton
+            variant="secondary"
+            label="Clear seats cache and reload"
+            onPress={() => void queryClient.resetQueries({ queryKey: seatKeys.all })}
+          />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    gap: Spacing.two,
+    paddingTop: Spacing.two,
+  },
+});
+
+Me : TÔi đã sửa đc lỗi rồi hãy sang phần tiếp theo
+Phase 6: Màn hình chi tiết ghế (seat/[id])
+
+Tôi đã kiểm tra tài liệu Expo Router: useLocalSearchParams và Link với href dạng object vẫn là API hiện hành. Ở phần "typed routes", tài liệu nói rõ rằng với route động, href phải là object có params đúng tên, viết dạng chuỗi "/user/[id]" sẽ bị TypeScript báo lỗi.
+
+Ý tưởng chính
+
+Dynamic route. File src/app/seat/[id].tsx có tên trong ngoặc vuông nghĩa là "một đoạn đường dẫn thay đổi được". Đường dẫn /seat/A01 chạy file này với id = "A01", còn /seat/B05 chạy cùng file với id = "B05". Một file phục vụ mọi ghế. Trong màn hình, bạn lấy giá trị bằng hook useLocalSearchParams.
+
+Vì sao là Local chứ không phải Global. Trong stack, có thể có nhiều màn hình chồng nhau. useLocalSearchParams chỉ trả tham số của màn hình đang hiển thị (màn hình chứa hook), còn bản Global cập nhật theo cả màn hình khác. Tài liệu khuyên dùng bản Local trong stack.
+
+Hai query chạy song song. Màn hình cần ghế và các booking. Ta gọi cả hai hook ở đầu màn hình để chúng bắt đầu cùng lúc. Nếu gọi useBookings sâu bên trong phần hiển thị ghế, nó chỉ chạy sau khi ghế tải xong, tổng thời gian chờ thành 600 + 600 ms thay vì 600 ms. Hiện tượng này gọi là waterfall và là câu hỏi hay gặp.
+
+Query và mutation. useQuery đọc dữ liệu và tự chạy khi màn hình mở. useMutation ghi dữ liệu và chỉ chạy khi bạn gọi .mutate(...). Mutation cho bạn isPending (đang gửi), error (nếu lỗi) và mặc định không tự thử lại.
+
+Sau khi ghi, cache phải được làm mới. Sau khi tạo/sửa ghế, dữ liệu trong cache đã lỗi thời. Ta gọi invalidateQueries({ queryKey: ['seats'] }), nó đánh dấu mọi query có key bắt đầu bằng ['seats'] là cũ (cả danh sách lẫn từng chi tiết ghế, nhờ cách ta đặt key ở Phase 4), và refetch những query đang hiển thị. Ta trả về Promise đó từ onSuccess, nên mutation giữ isPending cho đến khi dữ liệu mới tải xong. Vì vậy khi form đóng lại, danh sách đã cập nhật đúng.
+
+Validation hai lớp, cùng tinh thần với conflict ở Phase 9: form kiểm tra để báo lỗi thân thiện, và mock server cũng kiểm tra lại. Ta dùng chung một hàm kiểm tra vì cả hai đều là code của ta. Ở hệ thống thật, server có bản kiểm tra riêng.
+
+Vì sao chỉ cho phép chữ, số và dấu gạch ngang trong id. Id nằm trong URL (/seat/A01). Một id có dấu / hoặc dấu cách sẽ làm hỏng route.
+Bước 7.4: Form dùng chung
+
+Giải thích trước khi có code:
+
+Form giữ giá trị đang gõ bằng useState. Đây là state cục bộ của form (chưa gửi đi đâu cả), nên không đặt trong Zustand hay TanStack Query.
+Lỗi chỉ hiện sau lần bấm nút đầu tiên (submitted). Nếu hiện ngay từ đầu, người dùng chưa gõ gì đã thấy chữ đỏ. Sau khi đã bấm một lần, lỗi cập nhật theo từng ký tự gõ.
+Ở chế độ sửa, id chỉ hiển thị, không cho nhập, vì updateSeat không cho đổi id.
+Lỗi từ server (submitError, ví dụ trùng id) hiển thị bằng describeError, có accessibilityRole="alert" để screen reader đọc ngay.
+Công tắc ổ cắm dùng Switch, nằm trong một hàng cao tối thiểu 44 dp. Màu lấy từ token.

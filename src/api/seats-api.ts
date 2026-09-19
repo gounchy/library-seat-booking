@@ -1,6 +1,8 @@
 import { ApiError, simulateRequest } from '@/api/client';
 import { db } from '@/api/mock-db';
+import { validateSeatId, validateZone } from '@/lib/validate-seat';
 import type { Seat, SeatInput } from '@/types';
+
 
 const copySeat = (seat: Seat): Seat => ({ ...seat });
 
@@ -22,15 +24,15 @@ export function getSeat(id: string): Promise<Seat> {
 
 export function createSeat(seat: Seat): Promise<Seat> {
   return simulateRequest(() => {
-    const id = seat.id.trim().toUpperCase();
-    const zone = seat.zone.trim();
-    if (!id || !zone) {
-      throw new ApiError('VALIDATION', 'Seat id and zone are required.');
+    const validationError = validateSeatId(seat.id) ?? validateZone(seat.zone);
+    if (validationError) {
+      throw new ApiError('VALIDATION', validationError);
     }
+    const id = seat.id.trim().toUpperCase();
     if (db.seats.some((s) => s.id === id)) {
       throw new ApiError('CONFLICT', `Seat ${id} already exists.`);
     }
-    const created: Seat = { id, zone, hasOutlet: seat.hasOutlet };
+    const created: Seat = { id, zone: seat.zone.trim(), hasOutlet: seat.hasOutlet };
     db.seats.push(created);
     return copySeat(created);
   });
@@ -39,11 +41,11 @@ export function createSeat(seat: Seat): Promise<Seat> {
 export function updateSeat(id: string, input: SeatInput): Promise<Seat> {
   return simulateRequest(() => {
     const seat = findSeat(id);
-    const zone = input.zone.trim();
-    if (!zone) {
-      throw new ApiError('VALIDATION', 'Zone is required.');
+    const validationError = validateZone(input.zone);
+    if (validationError) {
+      throw new ApiError('VALIDATION', validationError);
     }
-    seat.zone = zone;
+    seat.zone = input.zone.trim();
     seat.hasOutlet = input.hasOutlet;
     return copySeat(seat);
   });

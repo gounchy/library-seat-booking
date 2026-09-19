@@ -1,28 +1,36 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Link } from 'expo-router';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppButton } from '@/components/app-button';
 import { AppTextInput } from '@/components/app-text-input';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { ZoneFilter } from '@/components/zone-filter';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { filterSeats, getZones } from '@/lib/filter-seats';
 import { useFilterStore } from '@/store/filter-store';
 import type { Seat } from '@/types';
 
 function SeatRow({ seat }: { seat: Seat }) {
+  const theme = useTheme();
   const outlet = seat.hasOutlet ? 'Has outlet' : 'No outlet';
+
   return (
-    <ThemedView
-      type="backgroundElement"
-      style={styles.row}
-      accessible
-      accessibilityLabel={`Seat ${seat.id}, zone ${seat.zone}, ${outlet}`}>
-      <ThemedText type="default">Seat {seat.id}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Zone {seat.zone} · {outlet}
-      </ThemedText>
-    </ThemedView>
+    <Link href={{ pathname: '/seat/[id]', params: { id: seat.id } }} asChild>
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`Seat ${seat.id}, zone ${seat.zone}, ${outlet}`}
+        accessibilityHint="Opens seat details"
+        style={({ pressed }) => [
+          styles.row,
+          { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.8 : 1 },
+        ]}>
+        <ThemedText type="default">Seat {seat.id}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Zone {seat.zone} · {outlet}
+        </ThemedText>
+      </Pressable>
+    </Link>
   );
 }
 

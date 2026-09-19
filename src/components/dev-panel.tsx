@@ -39,6 +39,11 @@ export function DevPanel() {
             label="Clear seats cache and reload"
             onPress={() => void queryClient.resetQueries({ queryKey: seatKeys.all })}
           />
+          <AppButton
+            variant="secondary"
+            label="Fail the next request"
+            onPress={() => setSimulation({ failNext: true })}
+          />
         </>
       ) : null}
     </View>
