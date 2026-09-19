@@ -402,4 +402,21 @@ linkPrimary: {
 Những chỗ còn lại giữ nguyên. Vì primary có trong cả light và dark, TypeScript chấp nhận theme['primary']. Contrast của primary trên background đã tính ở Phase 2: khoảng 6.7:1 ở light và 11.7:1 ở dark, theo phép tính tay của tôi.
 
 Lưu ý accessibility: ThemedText chỉ là chữ, nó không tự thành link. Khi bạn dùng nó để bấm được, phải tự thêm accessibilityRole="link" ở nơi dùng.
+Me : TÔi đã thực hiện xong phần 2 và tiếp đến tôi cần bạn hướng dẫn rôi phần 3
+Phase 3: Types và Mock API
 
+Bạn nhớ phần này là nền cho mọi thứ sau. Ta làm theo từng bước nhỏ.
+
+Bước 3.1: Data model
+
+Đề gợi ý hai kiểu: Seat (id, zone, hasOutlet) và Booking (id, seatId, date, timeSlot, studentName). Ta bám sát, không thêm field.
+
+Các quyết định (đề chưa quy định, tôi đề xuất):
+
+Vấn đề	Đề xuất	Lý do
+zone	string	Form tạo ghế có thể nhập zone mới, và ta không cố định danh sách trước
+date	"YYYY-MM-DD" (string)	So sánh bằng === đơn giản, tránh lỗi múi giờ
+timeSlot	{ start: "HH:mm"; end: "HH:mm" }	Khớp ví dụ 14:00-16:00 và 15:00-17:00 của đề. Ta đổi sang phút khi tính
+User	{ studentName: string }	Đề không có kiểu này, nhưng cần cho sign-in và cho studentName của booking
+
+Seat.id sinh ra thế nào (người dùng nhập hay mock server tự sinh) tôi sẽ chốt ở bước 3.3 khi viết createSeat.
