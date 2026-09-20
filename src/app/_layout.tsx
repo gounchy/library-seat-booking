@@ -1,13 +1,13 @@
+import { OfflineBanner } from '@/components/offline-banner';
+import { useOutboxSync } from '@/features/offline/use-outbox-sync';
+import { startNetworkMonitoring } from '@/lib/network';
+import { PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
+import { useAuthStore } from '@/store/auth-store';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StyleSheet, useColorScheme, View } from 'react-native';
-
-import { OfflineBanner } from '@/components/offline-banner';
-import { startNetworkMonitoring } from '@/lib/network';
-import { PERSIST_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
-import { useAuthStore } from '@/store/auth-store';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -30,7 +30,7 @@ function RootNavigator() {
   }, [status]);
 
   useEffect(() => startNetworkMonitoring(), []);
-
+  useOutboxSync(status === 'signedIn');
   if (status === 'restoring') {
     return null;
   }
@@ -47,6 +47,7 @@ function RootNavigator() {
           <Stack.Screen name="seat/new" />
           <Stack.Screen name="seat/[id]/edit" />
           <Stack.Screen name="book/[seatId]" />
+          <Stack.Screen name="outbox" />
         </Stack.Protected>
         <Stack.Protected guard={!isSignedIn}>
           <Stack.Screen name="sign-in" />

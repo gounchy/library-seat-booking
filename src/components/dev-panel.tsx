@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { devInsertRivalBooking } from '@/api/bookings-api';
 import { setSimulation } from '@/api/client';
 import { AppButton } from '@/components/app-button';
 import { Spacing } from '@/constants/theme';
@@ -51,6 +52,11 @@ export function DevPanel() {
             variant="secondary"
             label="Clear seats cache and reload"
             onPress={() => void queryClient.resetQueries({ queryKey: seatKeys.all })}
+          />
+          <AppButton
+            variant="secondary"
+            label="Server: another student books B03 15:00-17:00"
+            onPress={() => devInsertRivalBooking('B03', '15:00', '17:00')}
           />
         </>
       ) : null}

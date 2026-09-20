@@ -5,6 +5,7 @@ import { ApiError } from '@/api/client';
 import { queryClient, queryPersister } from '@/lib/query-client';
 import { clearSession, readSession, saveSession } from '@/lib/secure-storage';
 import { useFilterStore } from '@/store/filter-store';
+import { useOutboxStore } from '@/store/outbox-store';
 import type { User } from '@/types';
 
 type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
@@ -60,6 +61,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     } finally {
       queryClient.clear();
       useFilterStore.getState().resetFilters();
+      useOutboxStore.getState().clear();
       set({ status: 'signedOut', user: null });
       await queryPersister.removeClient();
     }

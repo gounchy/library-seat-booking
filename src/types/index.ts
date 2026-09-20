@@ -26,3 +26,16 @@ export type BookingInput = Omit<Booking, 'id'>;
 export type User = {
   studentName: string;
 };
+export type OutboxAction =
+  | { type: 'createSeat'; seat: Seat }
+  | { type: 'updateSeat'; seatId: string; input: SeatInput }
+  | { type: 'createBooking'; booking: BookingInput };
+
+export type OutboxItem = {
+  id: string;
+  /** Thời điểm tạo (mili giây), dùng để sắp xếp. */
+  createdAt: number;
+  action: OutboxAction;
+  /** Chỉ có giá trị khi server từ chối lúc phát lại. Không có nghĩa là đang chờ. */
+  error?: string;
+};

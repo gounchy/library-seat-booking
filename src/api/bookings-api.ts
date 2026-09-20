@@ -44,3 +44,14 @@ export function createBooking(input: BookingInput): Promise<Booking> {
     return copyBooking(created);
   });
 }
+/** CHỈ ĐỂ TEST: chèn booking của "sinh viên khác" thẳng vào server giả, bỏ qua mọi kiểm tra. */
+export function devInsertRivalBooking(seatId: string, start: string, end: string): void {
+  db.bookings.push({
+    id: `b${db.nextBookingNumber}`,
+    seatId,
+    date: toDateString(new Date()),
+    timeSlot: { start, end },
+    studentName: 'Another Student',
+  });
+  db.nextBookingNumber += 1;
+}

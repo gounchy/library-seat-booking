@@ -16,15 +16,17 @@ import type { Booking, Seat } from '@/types';
 
 function BookingRow({ booking }: { booking: Booking }) {
   const { start, end } = booking.timeSlot;
+  const waiting = booking.id.startsWith('pending-');
   return (
     <ThemedView
       type="backgroundElement"
       style={styles.bookingRow}
       accessible
-      accessibilityLabel={`${booking.date}, ${start} to ${end}, ${booking.studentName}`}>
+      accessibilityLabel={`${booking.date}, ${start} to ${end}, ${booking.studentName}${waiting ? ', waiting to sync' : ''}`}>
       <ThemedText type="default">{booking.date}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         {start} – {end} · {booking.studentName}
+        {waiting ? ' · waiting to sync' : ''}
       </ThemedText>
     </ThemedView>
   );
