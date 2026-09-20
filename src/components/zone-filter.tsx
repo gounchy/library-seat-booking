@@ -27,7 +27,7 @@ function Chip({ label, selected, onPress }: ChipProps) {
         },
       ]}>
       <ThemedText type="smallBold" themeColor={selected ? 'onPrimary' : 'text'}>
-        {label}
+        {selected ? `✓ ${label}` : label}
       </ThemedText>
     </Pressable>
   );

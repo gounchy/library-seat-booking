@@ -86,6 +86,7 @@ export function SeatForm({
 
       <View style={styles.switchRow}>
         <ThemedText>Has power outlet</ThemedText>
+
         <Switch
           accessibilityRole="switch"
           accessibilityLabel="Has power outlet"

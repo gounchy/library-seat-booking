@@ -28,9 +28,9 @@ function SeatRow({
   const statusText =
     status === 'taken' ? 'Taken now' : status === 'free' ? 'Free now' : null;
 
-  const summary = [`Zone ${seat.zone}`, outlet, statusText]
-    .filter(Boolean)
-    .join(' · ');
+  const details = [`Zone ${seat.zone}`, outlet, statusText].filter(Boolean);
+  const summary = details.join(' · ');
+  const spokenSummary = details.join(', ');
 
   return (
     <Link
@@ -41,7 +41,7 @@ function SeatRow({
       asChild>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`Seat ${seat.id}, ${summary}`}
+         accessibilityLabel={`Seat ${seat.id}, ${spokenSummary}`}
         accessibilityHint="Opens seat details"
         style={({ pressed }) => [
           styles.row,
