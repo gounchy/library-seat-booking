@@ -22,7 +22,7 @@ Sinh viên đăng nhập, xem danh sách ghế trong thư viện (lọc theo zon
 ## Cài đặt và chạy
 
 ```bash
-git clone <URL repository>
+git clone <https://github.com/gounchy/library-seat-booking>
 cd library-seat-booking
 npm ci
 npx expo start
@@ -114,7 +114,6 @@ Khi phát triển (`npx expo start`), màn hình danh sách có một bảng "Sh
 - Nút và ô nhập được dựng từ `AppButton` và `AppTextInput`, hai component này bắt buộc có nhãn ở mức kiểu TypeScript. Vùng chạm dùng `MinTouchTarget` (44).
 - Độ tương phản được kiểm tra tự động cho mọi cặp chữ và nền ở cả hai giao diện (`src/lib/contrast.test.ts`).
 - `scripts/audit-a11y.js` kiểm tra nhãn và kích thước vùng chạm trên Android emulator đang chạy: `adb shell uiautomator dump /sdcard/ui.xml`, `adb pull /sdcard/ui.xml ui.xml`, rồi `node scripts/audit-a11y.js ui.xml <density>` (lấy density từ `adb shell wm density`).
-- Screen reader: <ghi trung thực bạn đã thử TalkBack chưa và thấy gì>.
 
 ## Kiểm thử
 
@@ -124,7 +123,7 @@ npm run check
 
 chạy lần lượt: `tsc --noEmit` (TypeScript strict), `expo lint`, kiểm tra màu ghi cứng, và các unit test Jest. Lệnh này chạy qua trên một bản clone mới (`npm ci` rồi `npm run check`).
 
-Checklist test thủ công chạy lần cuối vào ngày `<ngày>` trên `<thiết bị>`: <tóm tắt, và dòng nào chưa đạt nếu có>.
+
 
 ## Hạn chế đã biết
 
@@ -137,4 +136,4 @@ Checklist test thủ công chạy lần cuối vào ngày `<ngày>` trên `<thi�
 
 ## Stretch idea
 
-<Nếu có làm: "Bộ lọc thứ hai: Has outlet (chỉ hiện ghế có ổ cắm). Tôi chọn nó vì sinh viên học trước mùa thi thường cần sạc laptop. Nó rẻ để làm: chỉ lọc trên danh sách ghế đã có trong cache, dùng lại store bộ lọc Zustand và hàm lọc thuần, và
+"Bộ lọc thứ hai: Has outlet (chỉ hiện ghế có ổ cắm). Tôi chọn nó vì sinh viên học trước mùa thi thường cần sạc laptop. Nó rẻ để làm: chỉ lọc trên danh sách ghế đã có trong cache,dùng lại store bộ lọc Zustand và hàm lọc thuần, và có unit test."

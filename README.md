@@ -21,7 +21,7 @@ Students sign in, browse library seats (filter by zone, search by seat id), open
 ## Install and run
 
 ```bash
-git clone <repository URL>
+git clone <https://github.com/gounchy/library-seat-booking>
 cd library-seat-booking
 npm ci
 npx expo start
@@ -113,7 +113,6 @@ In development (`npx expo start`), each list screen has a collapsed "Show dev to
 - Buttons and text inputs are built from `AppButton` and `AppTextInput`, which require a label at the type level. Touch targets use `MinTouchTarget` (44).
 - Contrast is checked automatically for every text and background pair in both themes (`src/lib/contrast.test.ts`).
 - `scripts/audit-a11y.js` checks labels and touch-target size on a running Android emulator: `adb shell uiautomator dump /sdcard/ui.xml`, `adb pull /sdcard/ui.xml ui.xml`, then `node scripts/audit-a11y.js ui.xml <density>` (density from `adb shell wm density`).
-- Screen reader: <state honestly whether you tried TalkBack and what you saw>.
 
 ## Testing
 
@@ -123,7 +122,7 @@ npm run check
 
 runs, in order: `tsc --noEmit` (TypeScript strict), `expo lint`, the colour literal check, and the Jest unit tests. It passes on a fresh clone (`npm ci`, then `npm run check`).
 
-Manual test checklist last run on `<date>` on `<device>`: <summary, and any line that did not pass>.
+
 
 ## Known limitations
 
