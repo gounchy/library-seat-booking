@@ -14,10 +14,10 @@ Sinh viên đăng nhập, xem danh sách ghế trong thư viện (lọc theo zon
 
 ## Yêu cầu môi trường
 
-- Node.js 20.19.4 trở lên (checkpoint được làm với Node <kết quả `node -v` của bạn>)
+- Node.js 20.19.4 trở lên 
 - Git
-- Android Studio có Android emulator (đã thử trên emulator `<tên thiết bị>`, Android API `<mức API>`)
-- Expo SDK `<phiên bản expo trong package.json>` (đề yêu cầu SDK 56 trở lên)
+- Android Studio có Android emulator
+- Expo SDK `57` 
 
 ## Cài đặt và chạy
 
@@ -43,7 +43,7 @@ Không dùng bản web. `expo-secure-store` không chạy trên web, và dự á
 
 Mật khẩu được viết thẳng trong mã nguồn một cách có chủ ý: đây là server giả để bất kỳ ai cũng đăng nhập được. Server thật sẽ lưu mật khẩu đã băm (hash).
 
-## Tính năng (theo yêu cầu của checkpoint)
+## Tính năng 
 
 | Yêu cầu | Nằm ở đâu |
 |---|---|
@@ -81,7 +81,7 @@ Mỗi loại dữ liệu nằm ở đâu:
 | Cache truy vấn, các mục trong outbox | AsyncStorage | Không phải bí mật; cần để dùng được sau khi khởi động lại lúc đang offline |
 | Danh sách ghế đã lọc, phần trăm lấp đầy | Không lưu | Được suy ra từ ghế, booking và thời điểm hiện tại |
 
-## Các quyết định thiết kế (chỗ đề chưa quy định)
+## Các quyết định thiết kế 
 
 - Một khung giờ là `{ start: "HH:mm", end: "HH:mm" }`. Giờ kết thúc là loại trừ, nên 14:00-16:00 và 16:00-18:00 không xung đột.
 - Ghế được coi là "đang có người đặt" khi có một booking bao phủ thời điểm hiện tại. Booking cho giờ khác vẫn hiện trong danh sách booking của ghế đó.

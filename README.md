@@ -13,10 +13,10 @@ Students sign in, browse library seats (filter by zone, search by seat id), open
 
 ## Requirements
 
-- Node.js 20.19.4 or newer (the checkpoint was built with Node <your node -v>)
+- Node.js 20.19.4 or newer 
 - Git
-- Android Studio with an Android emulator (tested on emulator `<device name>`, Android API `<level>`)
-- Expo SDK `<expo version from package.json>` (the checkpoint asks for 56 or later)
+- Android Studio with an Android emulator 
+- Expo SDK `57` 
 
 ## Install and run
 
@@ -42,7 +42,7 @@ The "server" is a mock that lives in memory (`src/api`). It is not a real backen
 
 The passwords are written in the source on purpose: this is a fake server so that anyone can sign in. A real server would store password hashes.
 
-## Features (checkpoint requirements)
+## Features 
 
 | Requirement | Where |
 |---|---|
@@ -80,7 +80,7 @@ Where each kind of data lives:
 | Query cache, outbox items | AsyncStorage | Not secret; needed to work after a restart while offline |
 | Filtered seats, occupancy percentage | Not stored | Derived from seats, bookings and the current time |
 
-## Design decisions (where the brief does not say)
+## Design decisions 
 
 - A time slot is `{ start: "HH:mm", end: "HH:mm" }`. The end is exclusive, so 14:00-16:00 and 16:00-18:00 do not conflict.
 - A seat is "taken now" when a booking covers the current time. A booking for another time still appears in the seat's booking list.
