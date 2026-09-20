@@ -53,9 +53,10 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "jest-expo",
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
+  "preset": "jest-expo",
+  "moduleNameMapper": {
+    "\\.css$": "<rootDir>/test/empty-module.ts",
+    "^@/(.*)$": "<rootDir>/src/$1"
     }
   },
   "private": true
