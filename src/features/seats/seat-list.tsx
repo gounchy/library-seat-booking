@@ -25,6 +25,7 @@ function SeatRow({
 }) {
   const theme = useTheme();
   const outlet = seat.hasOutlet ? 'Has outlet' : 'No outlet';
+  
   const statusText =
     status === 'taken' ? 'Taken now' : status === 'free' ? 'Free now' : null;
 
@@ -72,8 +73,11 @@ export function SeatList({ seats }: { seats: Seat[] }) {
   const bookingsQuery = useBookings();
   const now = useNow();
 
-  const zones = getZones(seats);
-  const visibleSeats = filterSeats(seats, searchText, selectedZone);
+  const zones = getZones(seats); 
+  const outletOnly = useFilterStore((s) => s.outletOnly);
+  const setOutletOnly = useFilterStore((s) => s.setOutletOnly);
+
+  const visibleSeats = filterSeats(seats, searchText, selectedZone, outletOnly);
 
   const takenSeatIds = new Set(
     (bookingsQuery.data ?? [])
@@ -106,6 +110,8 @@ export function SeatList({ seats }: { seats: Seat[] }) {
         zones={zones}
         selected={selectedZone}
         onSelect={setSelectedZone}
+        outletOnly={outletOnly}
+        onToggleOutlet={() => setOutletOnly(!outletOnly)}
       />
 
       <ThemedText

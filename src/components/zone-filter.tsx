@@ -37,9 +37,11 @@ type ZoneFilterProps = {
   zones: string[];
   selected: string | null;
   onSelect: (zone: string | null) => void;
+  outletOnly: boolean;
+  onToggleOutlet: () => void;
 };
 
-export function ZoneFilter({ zones, selected, onSelect }: ZoneFilterProps) {
+export function ZoneFilter({ zones, selected, onSelect, outletOnly, onToggleOutlet }: ZoneFilterProps) {
   return (
     <ScrollView
       horizontal
@@ -55,6 +57,7 @@ export function ZoneFilter({ zones, selected, onSelect }: ZoneFilterProps) {
           onPress={() => onSelect(zone)}
         />
       ))}
+      <Chip label="Has outlet" selected={outletOnly} onPress={onToggleOutlet} />
     </ScrollView>
   );
 }
