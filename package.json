@@ -45,12 +45,14 @@
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "jest"
+    "check:colors": "node scripts/check-colors.js",
+    "test": "jest",
+    "check": "npm run typecheck && npm run lint && npm run check:colors && npm test"
   },
   "jest": {
   "preset": "jest-expo",
@@ -60,4 +62,5 @@
     }
   },
   "private": true
+  
 }
