@@ -22,7 +22,7 @@ Sinh viên đăng nhập, xem danh sách ghế trong thư viện (lọc theo zon
 ## Cài đặt và chạy
 
 ```bash
-git clone <https://github.com/gounchy/library-seat-booking>
+git clone https://github.com/gounchy/library-seat-booking
 cd library-seat-booking
 npm ci
 npx expo start

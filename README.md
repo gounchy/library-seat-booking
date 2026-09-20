@@ -21,7 +21,7 @@ Students sign in, browse library seats (filter by zone, search by seat id), open
 ## Install and run
 
 ```bash
-git clone <https://github.com/gounchy/library-seat-booking>
+git clone https://github.com/gounchy/library-seat-booking
 cd library-seat-booking
 npm ci
 npx expo start
@@ -134,5 +134,4 @@ runs, in order: `tsc --noEmit` (TypeScript strict), `expo lint`, the colour lite
 - Tested only on an Android emulator. iOS and physical devices were not tested.
 
 ## Stretch idea
-
-<If implemented: "Second filter: Has outlet. I chose it because students who study before exams often need to charge a laptop. It was cheap: it filters the already cached seat list, reuses the Zustand filter store and the pure filter function, and has unit tests." If not: "No stretch idea implemented.">
+Second filter: "Has outlet". I chose it because students who study before exams often need to charge a laptop. It filters the already cached seat list, reuses the Zustand filter store and the pure filter function, and has unit tests.
