@@ -15,9 +15,16 @@ export function useSeats() {
   });
 }
 export function useSeat(id: string) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: seatKeys.detail(id),
     queryFn: () => getSeat(id),
+    // Nếu danh sách đã có ghế này, dùng nó làm dữ liệu ban đầu (hiện ngay, dùng được offline).
+    initialData: () =>
+      queryClient.getQueryData<Seat[]>(seatKeys.all)?.find((seat) => seat.id === id),
+    // Dữ liệu ban đầu "già" bằng dữ liệu của danh sách, để TanStack biết khi nào cần tải lại.
+    initialDataUpdatedAt: () => queryClient.getQueryState(seatKeys.all)?.dataUpdatedAt,
   });
 }
 export function useCreateSeat() {

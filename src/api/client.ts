@@ -22,9 +22,11 @@ type Simulation = {
   failNext: boolean;
   /** Nếu true, mọi request đều bị lỗi mạng. */
   failAll: boolean;
+  /** Thiết bị đang offline: mọi request thất bại ngay với lỗi mạng. */
+  offline: boolean;
 };
 
-const simulation: Simulation = { latencyMs: 600, failNext: false, failAll: false };
+const simulation: Simulation = { latencyMs: 600, failNext: false, failAll: false, offline: false };
 
 export function setSimulation(patch: Partial<Simulation>): void {
   Object.assign(simulation, patch);
@@ -37,6 +39,9 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
  * Nếu handler throw ApiError, Promise trả về sẽ bị reject với lỗi đó.
  */
 export async function simulateRequest<T>(handler: () => T): Promise<T> {
+  if (simulation.offline) {
+    throw new ApiError('NETWORK', 'You are offline.');
+  }
   await wait(simulation.latencyMs);
   if (simulation.failAll || simulation.failNext) {
     simulation.failNext = false;

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { getCurrentUser, signIn as requestSignIn, type Session } from '@/api/auth-api';
 import { ApiError } from '@/api/client';
-import { queryClient } from '@/lib/query-client';
+import { queryClient, queryPersister } from '@/lib/query-client';
 import { clearSession, readSession, saveSession } from '@/lib/secure-storage';
 import { useFilterStore } from '@/store/filter-store';
 import type { User } from '@/types';
@@ -54,13 +54,14 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ status: 'signedIn', user: session.user });
   },
 
-  signOut: async () => {
+   signOut: async () => {
     try {
       await clearSession();
     } finally {
       queryClient.clear();
       useFilterStore.getState().resetFilters();
       set({ status: 'signedOut', user: null });
+      await queryPersister.removeClient();
     }
   },
 }));
